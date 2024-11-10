@@ -1,17 +1,49 @@
 @extends('layouts.app')
 
-@section('title', 'Список задач')
-
 @section('content')
-    <h1 class="text-2xl font-bold mb-4 text-center">List of Tasks</h1>
+    <h1>Список задач</h1>
 
-    <ul class="flex space-x-10 justify-center">
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <a href="{{ route('tasks.create') }}" class="btn btn-primary">Создать задачу</a>
+
+    <table class="table mt-3">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Теги</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
         @foreach($tasks as $task)
-            <li class="bg-purple-500 text-white rounded-lg shadow-lg p-4 hover:bg-purple-600 transition duration-300">
-                <a href="{{ url('/tasks', $task['id']) }}" class="block text-center">
-                    {{ $task['title'] }}
-                </a>
-            </li>
+            <tr>
+                <td>{{ $task->id }}</td>
+                <td>{{ $task->name }}</td>
+                <td>{{ $task->categories->name ?? 'Не указано' }}</td>
+                <td>
+                    @foreach($task->tags as $tag)
+                        <span class="badge badge-secondary">{{ $tag->name }}</span>
+                    @endforeach
+                </td>
+                <td>
+                    <a href="{{ route('tasks.show', $task->id) }}" class="btn btn-info btn-sm">Просмотр</a>
+                    <a href="{{ route('tasks.edit', $task->id) }}" class="btn btn-warning btn-sm">Редактировать</a>
+                    <form action="{{ route('tasks.destroy', $task->id) }}" method="POST" style="display:inline;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                </td>
+            </tr>
         @endforeach
-    </ul>
+        </tbody>
+    </table>
 @endsection
+

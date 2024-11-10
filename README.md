@@ -1,314 +1,397 @@
-Лабораторная работа №2. HTTP-запросы и шаблонизация в Laravel
-=============================================================
+Лабораторная работа №3. Основы работы с базами данных в Laravel
+===============================================================
+
 
 Цель работы
 -----------
 
-Изучить основные принципы работы с HTTP-запросами в Laravel и шаблонизацию с использованием Blade на основе веб-приложения `To-Do App для команд` --- приложения для управления задачами внутри команды.
-
-Приложение предназначено для команды, которая хочет управлять своими задачами, назначать их участникам, отслеживать статус и приоритет задач (похоже на Github Issues).
+Познакомиться с основными принципами работы с базами данных в Laravel. Научиться создавать миграции, модели и сиды на основе веб-приложения `To-Do App`.
 
 Условие
 -------
 
-### №1. Подготовка к работе, установка Laravel
+В данной лабораторной работе вы продолжите разработку приложения `To-Do App` для команд, начатого в предыдущих лабораторных работах.
 
-1. Открываю терминал и создаю проект Laravel с именем todo-app
-```bash
-composer create-project laravel/laravel:^10 todo-app
+Вы добавите функциональность работы с базой данных, создадите модели и миграции, настроите связи между моделями и научитесь использовать фабрики и сиды для генерации тестовых данных.
+
+### №1. Подготовка к работе
+
+1.  Установливаю СУБД MySQL.
+2.  Создаю новую базу данных для приложения `todo_app`.
+3.  Настраиваю переменные окружения в файле `.env` для подключения к базе данных: 
+``` 
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1 
+DB_PORT=3307
+DB_DATABASE=db_todo 
 ```
-2. Перехожу в директорию проекта:
-```bash
- cd todo-app
- ```
- 3. Запускаю встроенный сервер Laravel: 
- ```bash 
- php artisan serve 
- ```
 
- __Вопрос__: Что я вижу в браузере, открыв страницу http://localhost:8000?
- __Ответ__: Перейдя по ссылке, я вижу базовую стартовую страницу Laravel с приветствием и основными предложениями.
- ![alt text]({1F5D1DF5-8ABA-42D9-B664-E7322CBA0692}.png)
+### №2. Создание моделей и миграций
 
- ### №2. Настройка окружения
 
- 1. Открываю файл `.env` и указываю следующие настройки приложения: 
- ```
- APP_NAME=ToDoApp 
- APP_ENV=local 
- APP_KEY= 
- APP_DEBUG=true 
- APP_URL=http://localhost:8000
- ```
-2. Генерирую ключ приложения
-```bash
-php artisan key:generate
-```
-__Вопрос__: Что будет, если данный ключ попадет в руки злоумышленника?
+1.  Создаю модель `Category` --- категория задачи.
+    -   `php artisan make:model Category -m`
+2.  Определение структуры таблицы `category` в миграции:
+    -   Добавляю поля:
+        -   `id` --- первичный ключ;
+        -   `name` --- название категории;
+        -   `description` --- описание категории;
+        -   `created_at` --- дата создания категории;
+        -   `updated_at` --- дата обновления категории.
 
-__Ответ__: Если данный ключ попадт в руки злоумышленника,это может привести к серьёзным проблемам безопасности. Этот ключ используется для шифрования и расшифровки данных, таких как:
-- конфиденциальные данные;
-- сессии пользователей;
-- токены CSRF.
-
-### №3. Основы работы с HTTP-запросами
-
-#### №3.1. Создание маршрутов для главной страницы и страницы "О нас"
-
-1.  Создаю класс-контроллер `HomeController` для обработки запросов на главную страницу.
-```bash
-php artisan make:controller HomeController
-```
-2.  Добавляю метод `index` в `HomeController`, который будет отвечать за отображение главной страницы.
 ```php
-public function index()
+public function up(): void
     {
-        return view('home');
+        Schema::create('categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->timestamps();
+            
+        });
     }
 ```
-3.  Создаю маршрут для главной страницы в файле `routes/web.php`. 
-```php
-Route::get('/', [HomeController::class, 'index'])->name('home');
-```
--   Открываю браузер и перехожу по адресу `http://localhost:8000`. 
-- Убеждаюсь, что загружается пустая страница, так как представление `home.blade.php` пока не создано.
 
 
-4.  В этом же контроллере `HomeController` создаю метод для страницы "О нас".
+3.  Создаю модель `Task` --- задача.
+    -   `php artisan make:model Category -m`
+4.  Определение структуры таблицы `task` в миграции:
+    -   Добавляю поля:
+        -   `id` --- первичный ключ;
+        -   `title` --- название задачи;
+        -   `description` --- описание задачи;
+        -   `created_at` --- дата создания задачи;
+        -   `updated_at` --- дата обновления задачи.
+
 ```php
-public function about()
+ public function up(): void
     {
-        return view('about');
+        Schema::create('tasks', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
     }
 ```
-5.  Добавляю маршрут для страницы "О нас" в файле `routes/web.php`.
+
+5.  Запускаю миграцию для создания таблицы в базе данных: 
+```bash 
+php artisan migrate
+```
+6.  Создайте модель `Tag` --- тег задачи.
+```bash
+php artisan make:model Tag -m
+```
+7.  Определение структуры таблицы tag в миграции:
+    -   Добавьте поля:
+        -   `id` --- первичный ключ;
+        -   `name` --- название тега;
+        -   `created_at` --- дата создания тега;
+        -   `updated_at` --- дата обновления тега.
+
 ```php
-Route::get('/about', [HomeController::class, 'about'])->name('about');
+public function up(): void
+    {
+        Schema::create('tags', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+    }
+```
+8.  Добавляю поле `$fillable` в модели `Task`, `Category` и `Tag` для массового заполнения данных.
+
+```php
+// Task
+protected $fillable = ['name', 'description'];
+
+// Tag
+protected $fillable = ['name'];
+
+// Category
+protected $fillable = ['name', 'description'];
 ```
 
-#### №3.2. Создание маршрутов для задач
+### №3. Связь между таблицами
 
-1. Создаю класс-контроллер `TaskController` для обработки запросов, связанных с задачами, и добавляю следующие методы:
 
--   `index` --- отображение списка задач;
--   `create` --- отображение формы создания задачи;
--   `store` --- сохранение новой задачи;
--   `show` --- отображение задачи;
--   `edit` --- отображение формы редактирования задачи;
--   `update` --- обновление задачи;
--   `destroy` --- удаление задачи.
+1.  Создаю миграцию для добавления поля `category_id` в таблицу task.
+    -   `php artisan make:migration add_category_id_to_tasks_table --table=tasks`
+    -   Определяю структуру поля `category_id` и добавляю внешний ключ для связи с таблицей category.
 
-```php
-class TaskController extends Controller
-{
+    ```php
+    Schema::table('tasks', function (Blueprint $table) {
+            $table->foreignId('category_id')->constrained()->onDelete('cascade');
+        });
+    ```
+2.  Создаю промежуточную таблицу для связи многие ко многим между задачами и тегами:
+    -   `php artisan make:migration create_task_tag_table`
+3.  Определение соответствующей структуры таблицы в миграции.
+    -   Данная таблица должна связывать задачи и теги по их идентификаторам.
+    -   Например: `task_id` и `tag_id`: `10` задача связана с `5` тегом.
+    ```php
+    Schema::create('task_tag', function (Blueprint $table) {
+            $table->foreignId('task_id')->constrained()->onDelete('cascade');
+            $table->foreignId('tag_id')->constrained()->onDelete('cascade');
+        });
+    ```
+
+4.  Запускаю миграцию для создания таблицы в базе данных.
+   ```php
+    php artisan migrate
+   ```
+
+### №4. Связи между моделями
+
+1.  Добавляю отношения в модель `Category` (Категория может иметь много задач)
+    -   Открываю модель `Category` и добавляю метод: 
+    ```php
+    public function tasks() 
+    { 
+        return $this->hasMany(Task::class); 
+    }
+    ```
+
+2.  Добавляю отношения в модель `Task`
+    -   Задача прикреплена к одной категории.
+    ```php
+    public function categories()
+    {
+        return $this->belongsTo(Category::class);
+    }
+    ```
+    -   Задача может иметь много тегов.
+    ```php
+    public function tags()
+    {
+        return $this->hasMany(Tag::class);
+    }
+    ```
+
+3.  Добавляю отношения в модель `Tag` (Тег может быть прикреплен к многим задачам)
+    ```php
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class);
+    }
+    ```
+4.  Добавляю соответствующие поля в `$fillable` моделей. 
+
+    ( `category_id` в модель `Task`)
+
+### №5. Создание фабрик и сидов
+
+1.  Создаю фабрику для модели `Category`:
+    -   `php artisan make:factory CategoryFactory --model=Category`
+    -   Определяю структуру данных для генерации категорий.
+    ```php
+    public function definition(): array
+    {
+        return [
+            'name' => $this->faker->word(),
+            'description' => $this->faker->text(),
+        ];
+    }
+    ```
+2.  Создаю фабрику для модели `Task`.
+    -   `php artisan make:factory TaskFactory --model=Task`
+    ```php
+
+    ```
+3.  Создаю фабрику для модели `Tag`.
+    -   `php artisan make:factory TagFactory --model=Tag`
+4.  Создаю сиды (`seeders`) для заполнения таблиц начальными данными для моделей: `Category`, `Task`, `Tag`.
+    ```
+    php artisan make:seeder CategorySeeder
+    php artisan make:seeder TaskSeeder
+    php artisan make:seeder TagSeeder
+    ```
+
+   Прописываю сколько записей хочу задать.
+   ```php
+   Category::factory(5)->create();
+   Task::factory(10)->create();
+   Tag::factory(5)->create();
+   ```
+
+5.  Обновляю файл `DatabaseSeeder` для запуска сидов и запустите их: `bash php artisan db:seed`
+    ```php
+    $this->call([
+            CategorySeeder::class,
+            TaskSeeder::class,
+            TagSeeder::class,
+        ]);
+    ```
+
+__Таблица `Tasks`__
+
+![Alt text](photo/2.png) <br>
+
+Таблица `Categories`:
+
+![Alt text](photo/3.png) <br>
+
+Таблица `Tags`:
+
+![Alt text](photo/1.png) <br>
+
+### №6. Работа с контроллерами и представлениями
+
+1.  Открываю контроллер `TaskController` (`app/Http/Controllers/TaskController.php`).
+2.  Обновляю метод `index` для получения списка задач из базы данных.
+    ```php
     public function index()
     {
-        return 'This is a list of tasks';
+        $tasks = Task::with(['categories', 'tags'])->get();
+        return view('tasks.index', compact('tasks'));
     }
-
-    public function create()
-    {
-        // 
-    }
-
-    public function store(Request $request)
-    {
-        // 
-    }
-
+    ```
+3.  Обновляю метод `show` для отображения отдельной задачи.
+    -   Отображаю информацию о задаче по ее идентификатору
+    -   Отображаю категорию и теги задачи.
+    ```php
     public function show($id)
     {
-        return "This is the task with id: $id";
+    $task = Task::with(['categories', 'tags'])->findOrFail($id);
+    return view('tasks.show', compact('task'));
+    }
+    ```
+4.  В методах `index` и `show` используется метод `with` (Eager Loading) для загрузки связанных моделей.
+5.  Обновила соответствующие представления для отображения списка задач и отдельной задачи.
+6.  Обновите метод `create` для отображения формы создания задачи и метод `store` для сохранения новой задачи в базе данных.
+    -   Примечание: Поскольку вы ещё не изучали работу с формами, используйте объект `Request` для получения данных.
+    ```php
+    public function create()
+    {
+        $categories = Category::all();
+        $tags = Tag::all();
+        return view('tasks.create', compact('categories', 'tags'));
     }
 
+    ```
+7.  Обновите метод `edit` для отображения формы редактирования задачи и метод `update` для сохранения изменений в базе данных.
+    ```php
     public function edit($id)
     {
-        // 
-    }
+        $task = Task::with(['categories', 'tags'])->findOrFail($id);
+        $categories = Category::all();
+        $tags = Tag::all();
 
-    public function update(Request $request, $id)
-    {
-        //
+        return view('tasks.edit', compact('task', 'categories', 'tags'));
     }
-
+    ```
+8.  Обновите метод `destroy` для удаления задачи из базы данных.
+    ```php
     public function destroy($id)
     {
-        // 
+        $task = Task::findOrFail($id);
+        $task->delete();
+        return redirect()->route('tasks.index')->with('success', 'Задача успешно удалена');
     }
-}
-```
-6. Добавляю маршруты для TaskController с использованием ресурса
-```php
-Route::resource('tasks', App\Http\Controllers\TaskController::class);
-```
-__Вопрос__: Объясните разницу между ручным созданием маршрутов и использованием ресурсного контроллера. Какие маршруты и имена маршрутов будут созданы автоматически?  
+    ```
+9. Содержимое файла `TaskController.php`
+    ```php
+        <?php
 
-__Ответ:__
+    namespace App\Http\Controllers;
 
-***Ручное создание маршрутов***: Когда создаются маршруты вручную, нужно для каждого метода контроллера прописать отдельный маршрут, указать HTTP-метод и имя маршрута. 
-Это даёт вам полный контроль над маршрутами, но требует больше кода и становится громоздким для больших приложений.
+    use App\Models\Category;
+    use App\Models\Tag;
+    use App\Models\Task;
+    use Illuminate\Http\Request;
 
-***Ресурсный контроллер***: автоматически генерирует маршруты для всех стандартных операций (CRUD) в Laravel. Это уменьшает количество кода и автоматически назначает имена маршрутов.
+    class TaskController extends Controller
+    {
+        public function index()
+        {
+            $tasks = Task::with(['categories', 'tags'])->get();
+            return view('tasks.index', compact('tasks'));
+        }
 
-7. Проверяю созданные маршруты с помощью команды 
-```php
-php artisan route:list
-```
-![alt text]({F85FB21A-0E2E-4D1C-ABC2-A952E27A76CE}.png) 
+        public function show($id)
+        {
+            $task = Task::with(['categories', 'tags'])->findOrFail($id);
+            return view('tasks.show', compact('task'));
+        }
 
-### №4. Шаблонизация с использованием Blade
+        public function create()
+        {
+            $categories = Category::all();
+            $tags = Tag::all();
+            return view('tasks.create', compact('categories', 'tags'));
+        }
 
-#### №4.1. Создание макета страницы
+        public function store(Request $request)
+        {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'category_id' => 'required|exists:categories,id'
+            ]);
 
-1.  Создаю макет основных страниц `layouts/app.blade.php` с общими элементами страницы:
-    1.  Заголовок страницы;
-    2.  Меню навигации;
-    3.  Контент страницы.
-2.  Использую директиву `@yield` для определения области, в которую будут вставляться содержимое различных страниц.
+            $task = Task::create($request->only(['name', 'description', 'category_id']));
 
+            if ($request->has('tags')) {
+                $task->tags()->sync($request->input('tags'));
+            }
 
-```php
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title')</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-</head>
-<body>
-    <nav>
-        <ul>
-            <li><a href="{{ url('/') }}">Главная</a></li>
-            <li><a href="{{ url('/about') }}">О нас</a></li>
-            <li><a href="{{ url('/contact') }}">Контакты</a></li>
-        </ul>
-    </nav>
-    <div class="content">
-        @yield('content')
-    </div>
-    <script src="{{ asset('js/app.js') }}"></script>
-</body>
-</html>
-```
+            return redirect()->route('tasks.index')->with('success', 'Задача успешно создана');
+        }
 
-#### №4.2. Использование шаблонов Blade
+        public function edit($id)
+        {
+            $task = Task::with(['categories', 'tags'])->findOrFail($id);
+            $categories = Category::all();
+            $tags = Tag::all();
 
-1.  Создаю представление для главной страницы `home.blade.php` с использованием макета `layouts/app.blade.php` в каталоге `resources/views`.
-2.  На главной странице должно быть:
-    1.  Приветственное сообщение: заголовок и краткое описание приложения, например "To-Do App для команд".
-    2.  Навигация: ссылки на основные разделы, такие как:
-    -   Список задач;
-    -   Создание задачи.
-        1.  Информация о приложении: краткое описание назначения приложения и его основных функций.
+            return view('tasks.edit', compact('task', 'categories', 'tags'));
+        }
 
+        public function update(Request $request, $id)
+        {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'category_id' => 'required|exists:categories,id'
+            ]);
 
-3.  Создаю представление для страницы "О нас" --- `about.blade.php` с использованием макета `layouts/app.blade.php` в каталоге `resources/views`.
+            $task = Task::findOrFail($id);
+            $task->update($request->only(['name', 'description', 'category_id']));
 
+            if ($request->has('tags')) {
+                $task->tags()->sync($request->input('tags'));
+            }
 
-4.  Создаю представления для задач со следующими шаблонами в каталоге `resources/views/tasks`:
-    -   `index.blade.php` --- список задач;
-    -   `show.blade.php` --- отображение задачи;
-    -   ...
-5.  Следом надо отрендерить список задач на странице `index.blade.php` с использованием статических данных, передаваемых из контроллера с помощью директивы `@foreach`.
+            return redirect()->route('tasks.show', $task->id)->with('success', 'Задача успешно обновлена');
+        }
 
-#### №4.3. Анонимные компоненты Blade
-
-1.  Создаю анонимный компонент для отображения `header`. Использую созданный компонент в макете `layouts/app.blade.php`.
-```php
-<header>
-    <h1 class='header-title'>To-Do App</h1>
-    <nav>
-        <ul>
-            <li><a href="{{ url('/') }}">Home</a></li>
-            <li><a href="{{ url('/about') }}">About</a></li>
-        </ul>
-    </nav>
-</header>
-```
-
-2.  Создаю анонимный компонент для отображения задачи:
-    1.  Компонент должен быть простым и использовать передаваемые параметры с помощью директивы `@props`. Это сделает шаблоны более гибкими и переиспользуемыми на различных страницах.
-    2.  Компонент должен отображать информацию о задаче:
-        1.  Название задачи;
-        2.  Описание задачи;
-        3.  Дата создания задачи;
-        4.  Дата обновления задачи;
-        5.  Действия над задачей (редактирование, удаление);
-        6.  Статус задачи (выполнена/не выполнена);
-        7.  Приоритет задачи (низкий/средний/высокий);
-        8.  Исполнитель задачи (Assignment), то есть имя пользователя, которому назначена задача.
-
-```php
-@props(['task'])
-
-<div class="task">
-    <h2>{{ $task['title'] }}</h2>
-    <p><strong>Description:</strong> {{ $task['description'] ?? 'Описание не указано.' }}</p>
-    <p><strong>Creation date:</strong> {{ $task['created_at'] ?? 'Не указана' }}</p>
-    <p><strong>Update date:</strong> {{ $task['updated_at'] ?? 'Не указана' }}</p>
-    <p><strong>Status:</strong> {{ $task['status'] ? 'Completed' : 'Not completed' }}</p>
-    <p><strong>Priority:</strong> {{ $task['priority'] }}</p>
-    <p><strong>Executor:</strong> {{ $task['assigned_to'] ?? 'Не назначен' }}</p>
-
-    </div>
-</div>
-```
-3.  Отобразите созданный компонент задачи на странице `show.blade.php` с использованием передаваемых параметров.
-
-```php
-@extends('layouts.app')
-
-@section('title', $task['title'])
-
-@section('content')
-    <x-task :task="$task" />
-@endsection
-```
-
-#### №4.4. Стилизация страниц
-
-1.  Добавляю стили для страниц .
-2.  Создаю файл стилей `app.css` в каталоге `public/css` и подключаю его к макету `layouts/app.blade.php`.
+        public function destroy($id)
+        {
+            $task = Task::findOrFail($id);
+            $task->delete();
+            return redirect()->route('tasks.index')->with('success', 'Задача успешно удалена');
+        }
+    }
+    ```
 
 Контрольные вопросы
 -------------------
 
-1.  Что такое ресурсный контроллер в Laravel и какие маршруты он создает? 
->__Ресурсный контроллер в Laravel__ обрабатывает стандартные операции CRUD для ресурса. Он создает следующие маршруты:
->
->-   `GET /resources` --- индекс (список ресурсов).
->-   `GET /resources/create` --- форма для создания.
->-   `POST /resources` --- сохранение нового ресурса.
->-   `GET /resources/{id}` --- показать ресурс.
->-   `GET /resources/{id}/edit` --- форма редактирования.
->-   `PUT/PATCH /resources/{id}` --- обновление ресурса.
->-   `DELETE /resources/{id}` --- удаление ресурса.
-2.  Объясните разницу между ручным созданием маршрутов и использованием ресурсного контроллера.
->Ручное создание маршрутов требует указания каждого маршрута отдельно, что может привести к дублированию кода. Ресурсный контроллер автоматически создает маршруты для всех операций CRUD, упрощая управление и улучшая читаемость кода.
-3.  Какие преимущества предоставляет использование анонимных компонентов Blade?
->Анонимные компоненты позволяют:
->
->-   Разделить шаблоны на переиспользуемые части.
->-   Параметризовать компоненты с помощью директивы `@props`.
->-   Уменьшить дублирование кода.
->-   Улучшить читаемость и поддержку шаблонов.
-4.  Какие методы HTTP-запросов используются для выполнения операций CRUD?
-
->-   **Create**: `POST`
->-   **Read**: `GET`
->-   **Update**: `PUT` или `PATCH`
->-   **Delete**: `DELETE`
-
-### Скриншоты с веб-браузера 
-__Главная страница__ 
-![alt text]({7D7E617D-FCBA-4886-B2F5-B4FEBA0E4653}.png) 
-
-__Страница "About"__ 
-![alt text]({AD821BDF-141A-48F2-9DBA-9AF99062CB84}.png) 
-
-__Страница "Tasks"__ 
-![alt text]({8ED4FABE-3AA0-4D37-83D3-AEE33522F4BF}.png) 
-
-__Описание одной из задачи__ 
-![alt text]({E317FF2D-364D-4662-AE17-B8701B23092D}.png) 
+1.  Что такое миграции и для чего они используются?
+>__Миграция__ — это процесс внесения изменений в структуру базы данных. Миграции помогают управлять изменениями в базе данных, особенно в проектах, где база данных развивается вместе с приложением.
+2.  Что такое фабрики и сиды, и как они упрощают процесс разработки и тестирования?
+>__Фабрики__ — это специальные классы или функции, которые создают объекты с заранее определёнными значениями. Используются для создания экземпляров моделей с заполненными полями.  
+__Сиды__ (или сидеры) — это классы, которые добавляют начальные данные в базу данных. В отличие от фабрик, сиды обычно заполняют базу конкретными значениями, которые могут быть необходимы для работы приложения.  
+Они упрощают разработку, позволяя автоматически создавать большое количество записей вместо ручного заполнения данных. Это значительно ускоряет процесс, а тесты выполняются с одинаковыми данными, что делает поиск ошибок проще и надежнее.
+3.  Что такое ORM? В чем различия между паттернами `DataMapper` и `ActiveRecord`?
+>__ORM__ - (Object Relative Mapping) - это паттерн проектирования, который позволяет наладить взаимосвязь между классом и таблицей в Базе Данных.  
+__Различия между ActiveRecord и DataMapper__
+>-   **Уровень связи с базой данных**: ActiveRecord напрямую привязывает модель к базе данных, а DataMapper работает через отдельный слой.
+>-   **Гибкость**: DataMapper лучше для сложных приложений с разной бизнес-логикой, тогда как ActiveRecord подходит для более простых и средних проектов.
+>-   **Простота в использовании**: ActiveRecord легче понять и использовать, но менее гибок для расширенных бизнес-требований.
+4.  В чем преимущества использования ORM по сравнению с прямыми SQL-запросами?
+>ORM помогает обойтись без ручных трансформаций данных и позволяет вообще не использовать SQL, а вести работу с базами через привычные языки программирования.  
+Преимущество объектно-реляционного отображения в том, что оно абстрагируется от базы данных; программисту не нужно возиться с деталями .
+5.  Что такое транзакции и зачем они нужны при работе с базами данных?
+>__Транзакция__ — это набор операций с базой данных, которые выполняются как единое целое: либо все успешно, либо ничего. Они нужны, чтобы гарантировать целостность данных — если одна из операций внутри транзакции не удаётся, все изменения отменяются, и база данных возвращается в исходное состояние.

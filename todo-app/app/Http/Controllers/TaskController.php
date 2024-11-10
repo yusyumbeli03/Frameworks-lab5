@@ -2,37 +2,84 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\Tag;
+use App\Models\Task;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    // Метод для отображения списка задач
     public function index()
     {
-        $tasks = [
-            ['id' => 1, 'title' => 'Task 1'],
-            ['id' => 2, 'title' => 'Task 2'],
-            ['id' => 3, 'title' => 'Task 3'],
-        ];
-
-        return view('tasks.index', ['tasks' => $tasks]);
+        $tasks = Task::with(['categories', 'tags'])->get();
+        return view('tasks.index', compact('tasks'));
     }
 
-    // Метод для отображения конкретной задачи
     public function show($id)
     {
-        $task = [
-            'id' => $id,
-            'title' => 'Task ' . $id,
-            'description' => 'Description of ' . $id . ' task',
-            'created_at' => now()->subDays($id)->toDateString(),
-            'updated_at' => now()->toDateString(),
-            'status' => $id % 2 == 0,
-            'priority' => ['low', 'medium', 'high'][array_rand(['low', 'medium', 'high'])],
-            'assigned_to' => 'User 1'
-        ];
-
-        return view('tasks.show', ['task' => $task]);
+        $task = Task::with(['categories', 'tags'])->findOrFail($id);
+        return view('tasks.show', compact('task'));
     }
+
+    public function create()
+    {
+        $categories = Category::all();
+        $tags = Tag::all();
+        return view('tasks.create', compact('categories', 'tags'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category_id' => 'required|exists:categories,id'
+        ]);
+
+        $task = Task::create($request->only(['name', 'description', 'category_id']));
+
+        if ($request->has('tags')) {
+            $task->tags()->sync($request->input('tags'));
+        }
+
+        return redirect()->route('tasks.index')->with('success', 'Задача успешно создана');
+    }
+
+    public function edit($id)
+    {
+        $task = Task::with(['categories', 'tags'])->findOrFail($id);
+        $categories = Category::all();
+        $tags = Tag::all();
+
+        return view('tasks.edit', compact('task', 'categories', 'tags'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category_id' => 'required|exists:categories,id'
+        ]);
+
+        $task = Task::findOrFail($id);
+        $task->update($request->only(['name', 'description', 'category_id']));
+
+        if ($request->has('tags')) {
+            $task->tags()->sync($request->input('tags'));
+        }
+
+        return redirect()->route('tasks.show', $task->id)->with('success', 'Задача успешно обновлена');
+    }
+
+    public function destroy($id)
+    {
+        $task = Task::findOrFail($id);
+        $task->delete();
+        return redirect()->route('tasks.index')->with('success', 'Задача успешно удалена');
+    }
+
+
+
 }
 

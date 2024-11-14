@@ -11,13 +11,13 @@ class TaskController extends Controller
 {
     public function index()
     {
-        $tasks = Task::with(['categories', 'tags'])->get();
+        $tasks = Task::with(['category', 'tags'])->get();
         return view('tasks.index', compact('tasks'));
     }
 
     public function show($id)
     {
-        $task = Task::with(['categories', 'tags'])->findOrFail($id);
+        $task = Task::with(['category', 'tags'])->findOrFail($id);
         return view('tasks.show', compact('task'));
     }
 
@@ -47,7 +47,7 @@ class TaskController extends Controller
 
     public function edit($id)
     {
-        $task = Task::with(['categories', 'tags'])->findOrFail($id);
+        $task = Task::with(['category', 'tags'])->findOrFail($id);
         $categories = Category::all();
         $tags = Tag::all();
 

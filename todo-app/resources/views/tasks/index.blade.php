@@ -10,7 +10,6 @@
     @endif
 
     <a href="{{ route('tasks.create') }}" class="btn btn-primary">Создать задачу</a>
-
     <table class="table mt-3">
         <thead>
         <tr>
@@ -26,7 +25,7 @@
             <tr>
                 <td>{{ $task->id }}</td>
                 <td>{{ $task->name }}</td>
-                <td>{{ $task->categories->name ?? 'Не указано' }}</td>
+                <td>{{ $task->category->name ?? 'Не указано' }}</td>
                 <td>
                     @foreach($task->tags as $tag)
                         <span class="badge badge-secondary">{{ $tag->name }}</span>

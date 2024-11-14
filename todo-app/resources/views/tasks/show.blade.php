@@ -8,7 +8,7 @@
     </div>
 
     <div class="mb-3">
-        <strong>Категория:</strong> {{ $task->categories->name ?? 'Не указано' }}
+        <strong>Категория:</strong> {{ $task->category->name ?? 'Не указано' }}
     </div>
 
     <div class="mb-3">

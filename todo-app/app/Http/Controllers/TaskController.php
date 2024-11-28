@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\Task;
@@ -28,15 +30,11 @@ class TaskController extends Controller
         return view('tasks.create', compact('categories', 'tags'));
     }
 
-    public function store(Request $request)
+    public function store(CreateTaskRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'category_id' => 'required|exists:categories,id'
-        ]);
+        $validated = $request->validated();
 
-        $task = Task::create($request->only(['name', 'description', 'category_id']));
+        $task = Task::create($validated);
 
         if ($request->has('tags')) {
             $task->tags()->sync($request->input('tags'));
@@ -54,16 +52,12 @@ class TaskController extends Controller
         return view('tasks.edit', compact('task', 'categories', 'tags'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateTaskRequest $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'category_id' => 'required|exists:categories,id'
-        ]);
+        $validated = $request->validated();
 
         $task = Task::findOrFail($id);
-        $task->update($request->only(['name', 'description', 'category_id']));
+        $task->update($validated);
 
         if ($request->has('tags')) {
             $task->tags()->sync($request->input('tags'));

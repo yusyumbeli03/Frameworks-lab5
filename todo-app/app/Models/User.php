@@ -41,4 +41,16 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    // Проверка, является ли пользователь администратором
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    // Проверка, может ли пользователь просматривать свой кабинет
+    public function canViewDashboard(User $targetUser): bool
+    {
+        return $this->id === $targetUser->id || $this->isAdmin();
+    }
+
 }

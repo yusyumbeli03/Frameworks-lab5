@@ -1,371 +1,294 @@
-# Лабораторная работа №4. Формы и валидация данных
+# Лабораторная работа №5. Компоненты безопасности в Laravel
+
 
 ## Цель работы
 
-Познакомиться с основами создания и управления формами в Laravel.
+Познакомиться с основами компонентов безопасности в Laravel, таких как аутентификация, авторизация, защита от CSRF, а также использование встроенных механизмов для управления доступом.
 
-Освоить механизмы валидации данных на сервере, использовать предустановленные и кастомные правила валидации, а также научиться обрабатывать ошибки и обеспечивать безопасность данных.
+Освоить подходы к безопасной разработке, включая создание защищенных маршрутов и управление ролями пользователей.
 
 ## Условие
 
-В данной лабораторной работе будут созданы HTML-формы, реализована проверка данных на стороне сервера и обеспечено безопасное взаимодействие с пользователем, предотвращая уязвимости, такие как `XSS` и `CSRF`.
+В данной лабораторной работе вы реализуете основные компоненты безопасности, такие как аутентификация, авторизация, защита маршрутов и базовая работа с ролями. Дополнительно вы настроите механизм сброса пароля и исследуете логирование действий пользователя.
 
 ### №1. Подготовка к работе
 
-1.  Будет продолжена работа с прошлым проектом.
-2.  Необходимые переменные в `.env` файле будут проинициализированы для успешного подключения к БД.
+1. Продолжаю работу с прошлым проектом.
+2. Переменные окружения в `.env` настроены правильно, включая подключение к базе данных.
 
-### №2. Создание формы
-1.  Создайте форму для добавления новой задачи:
-    1.  Форма должна содержать следующие поля: `Название`, `Описание`, `Дата выполнения`, `Категория`.
-      >Было создано новое поле `due_date` в таблице `Task`. 
+### №2. Аутентификация пользователей
 
-    ```php
-    @extends('layouts.app')
+1.  Создаю контроллер `AuthController` для управления аутентификацией пользователей. 
 
-    @section('content')
-        <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-            <h1 class="text-2xl font-semibold mb-6">Создать новую задачу</h1>
+` php artisan make:controller AuthController`
 
-            <form action="{{ route('tasks.store') }}" method="POST">
-                @csrf
-                <div class="mb-4">
-                    <label for="name" class="block text-sm font-medium text-gray-700">Название</label>
-                    <input type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="name" name="name" required>
-                </div>
-
-                <div class="mb-4">
-                    <label for="description" class="block text-sm font-medium text-gray-700">Описание</label>
-                    <textarea class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="description" name="description"></textarea>
-                </div>
-
-                <div class="mb-4">
-                    <label for="due_date" class="block text-sm font-medium text-gray-700">Дата выполнения</label>
-                    <input type="date" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="due_date" name="due_date" required value="{{ old('due_date') }}">
-                </div>
-
-                <div class="mb-4">
-                    <label for="category_id" class="block text-sm font-medium text-gray-700">Категория</label>
-                    <select class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="category_id" name="category_id" required>
-                        <option value="">Выберите категорию</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="mb-4">
-                    <label for="tags" class="block text-sm font-medium text-gray-700">Теги</label>
-                    <select class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="tags" name="tags[]" multiple>
-                        @foreach($tags as $tag)
-                            <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <button type="submit" class="w-full mt-4 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Создать задачу</button>
-            </form>
-        </div>
-    @endsection
-    ```
-    2.  Используйте Blade-шаблоны для рендеринга формы
-
-    ![img.png](photo/image.png)
-
-    3.  Поле `Категория` должно быть выпадающим списком, загруженным из таблицы категорий в базе данных. 
-
-    ![img.png](photo/img.png)
-    
-    4.  Обеспечьте, чтобы форма отправляла данные методом POST на маршрут, созданный для обработки данных.
-    >Для того, чтобы осуществить отправку данных из формы по соответствующему типу запроса, укажем значение POST в атрибутах формы и также укажем путь к методу, который будет обрабатывать форму: 
-    ```php
-    <form action="{{ route('tasks.store') }}" method="POST">
-    ```
-2.  Создайте маршрут `POST /tasks` для сохранения данных из формы в базе данных. Для удобства можно использовать ресурсный контроллер.
-3.  Обновите контроллер `TaskController`
-    1.  Добавьте метод `create`, который возвращает представление с формой.
-    2.  Добавьте метод `store`, который обрабатывает данные из формы и сохраняет их.
-    ```php
-     public function create()
-    {
-        $categories = Category::all();
-        $tags = Tag::all();
-        return view('tasks.create', compact('categories', 'tags'));
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|min:3',
-            'description' => 'nullable|string|max:500',
-            'category_id' => 'required|exists:categories,id',
-            'due_date' => 'required|date|after_or_equal:today'
-        ]);
-
-        $task = Task::create($validated);
-
-        if ($request->has('tags')) {
-            $task->tags()->sync($request->input('tags'));
-        }
-
-        return redirect()->route('tasks.index')->with('success', 'Задача успешно создана');
-    }
-    ```
-
-### №3. Валидация данных на стороне сервера
-
-1.  Реализуйте валидацию данных непосредственно в методе `store` контроллера `TaskController`.
-2.  Требования к полям:
-    -   `title` --- обязательное, строка, минимальная длина 3 символа.
-    -   `description` --- строка, необязательно, максимальная длина 500 символов.
-    -   `due_date` --- обязательное, дата, должна быть не меньше сегодняшней даты.
-    -   `category_id` --- обязательное, должно существовать в таблице categories.
-
-    ```php
-     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|min:3',
-            'description' => 'nullable|string|max:500',
-            'category_id' => 'required|exists:categories,id',
-            'due_date' => 'required|date|after_or_equal:today'
-        ]);
-
-        $task = Task::create($validated);
-
-        if ($request->has('tags')) {
-            $task->tags()->sync($request->input('tags'));
-        }
-
-        return redirect()->route('tasks.index')->with('success', 'Задача успешно создана');
-    }
-    ```
-3.  Обработайте ошибки валидации и верните их обратно к форме, отображая сообщения об ошибках рядом с полями.
->Пример использования директивы `@error`
-```php
-<div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-gray-700">Название</label>
-                <input type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="name" name="name" required>
-            </div>
-            @error('name')
-            <div class="text-red-500">{{ $message }}</div>
-            @enderror
-```
-
-4.  Проверьте корректность работы валидации и убедитесь, что ошибки отображаются правильно.
-
-![img.png](photo/img_1.png) 
-![img.png](photo/img_2.png)
-
-### №4. Создание собственного класса запроса (Request)
-
-1.  На втором этапе создайте собственный класс запроса для валидации формы задачи:
-    -   Используйте команду `php artisan make:request CreateTaskRequest`
-    -   В классе `CreateTaskRequest` определите правила валидации, аналогичные тем, что были в контроллере.
+2.  Добавляю и реализую методы для регистрации, входа и выхода пользователя.
+    -   `register()` для отображения формы регистрации.
+    -   `storeRegister()` для обработки данных формы регистрации.
+    -   `login()` для отображения формы входа.
+    -   `storeLogin()` для обработки данных формы входа. 
     ```php
         <?php
 
-    namespace App\Http\Requests;
+    namespace App\Http\Controllers;
 
-    use Illuminate\Foundation\Http\FormRequest;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Auth;
+    use App\Models\User;
+    use Illuminate\Support\Facades\Hash;
 
-    class CreateTaskRequest extends FormRequest
+    class AuthController extends Controller
     {
-        public function authorize(): bool
+        public function register()
         {
-            return true;
+            return view('auth.register');
         }
 
-        public function rules(): array
+        public function storeRegister(Request $request)
         {
-            return [
-                'name' => 'required|string|min:3',
-                'description' => 'nullable|string|max:500',
-                'category_id' => 'required|exists:categories,id',
-                'due_date' => 'required|date|after_or_equal:today'
-            ];
-        }
-    }
-    ```
-    -   Обновите метод store контроллера `TaskController` для использования `CreateTaskRequest` вместо стандартного `Request`.
-    ```php
-    public function store(CreateTaskRequest $request)
-    {
-        $validated = $request->validated();
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
 
-        $task = Task::create($validated);
+            User::create([
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+            ]);
 
-        if ($request->has('tags')) {
-            $task->tags()->sync($request->input('tags'));
+            return redirect()->route('login')->with('success', 'Регистрация прошла успешно. Теперь вы можете войти.');
         }
 
-        return redirect()->route('tasks.index')->with('success', 'Задача успешно создана');
-    }
-    ```
-2.  Добавьте логику валидации для связанных данных
-    -   Проверьте, что значение `category_id` действительно существует в базе данных, и оно принадлежит определенной категории.
-    ```php
-    'category_id' => 'required|exists:categories,id',
-    ```
-3.  Убедитесь, что данные проходят валидацию через `TaskRequest` и что все ошибки корректно обрабатываются и возвращаются к форме.
-    ![img.png](photo/img_3.png)
-
-### №5. Добавление флеш-сообщений
-
-1.  Обновите HTML-форму для отображения подтверждающего сообщения об успешном сохранении задачи (флеш-сообщение).
-2.  Обновите метод store контроллера `TaskController`, чтобы добавлять флеш-сообщение при успешном сохранении задачи.
-
-```php
- return redirect()->route('tasks.index')->with('success', 'Задача успешно создана');
- ```
- >Отображение на странице флещ-сообщения
- ![img.png](photo/img_4.png)
-
-### №6. Защита от CSRF
-
-1.  Обеспечение безопасности данных в формах:
-    -   Добавьте директиву `@csrf` в форму для защиты от атаки CSRF.
-    -   Убедитесь, что форма отправляется только с помощью метода POST.
-
-    ```php
-    @extends('layouts.app')
-
-    @section('content')
-    <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <h1 class="text-2xl font-semibold mb-6">Создать новую задачу</h1>
-
-        <form action="{{ route('tasks.store') }}" method="POST">
-            @csrf
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-gray-700">Название</label>
-                <input type="text" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" id="name" name="name" required>
-            </div>
-    ```
-> Здесь видно, что форма отпраляется методом `Post` , а также используется директива `@CSRF - (Cross-Site Request Forgery)` ,чтобы обеспечить безопасность данных в формах и защитить от атак CSRF.
-
-### №7. Обновление задачи
-
-1.  Добавьте возможность редактирования задачи:
-    1.  Создайте форму для редактирования задачи. 
-
-    ```php artisan make:request UpdateTaskRequest ```  
-``
- ![img.png](photo/img_5.png)
-
-    2.  Создайте новый Request-класс `UpdateTaskRequest` с аналогичными правилами валидации.
-    ```php
-        <?php
-
-    namespace App\Http\Requests;
-
-    use Illuminate\Foundation\Http\FormRequest;
-
-    class UpdateTaskRequest extends FormRequest
-    {
-        public function authorize(): bool
+        public function login()
         {
-            return true;
+            return view('auth.login');
         }
 
-        public function rules(): array
+        public function storeLogin(Request $request)
         {
-            return [
-                'name' => 'required|string|min:3',
-                'description' => 'nullable|string|max:500',
-                'category_id' => 'required|exists:categories,id',
-                'due_date' => 'required|date|after_or_equal:today'
-            ];
-        }
-    }
-    ```
-    3.  Создайте маршрут `GET /tasks/{task}/edit` и метод `edit` в контроллере `TaskController`.
-    4.  Создайте маршрут `PUT /tasks/{task}` для обновления задачи.
-    5.  Обновите метод `update` в контроллере `TaskController` для обработки данных из формы.
-    ```php
-    public function update(UpdateTaskRequest $request, $id)
-    {
-        $validated = $request->validated();
+            $credentials = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
 
-        $task = Task::findOrFail($id);
-        $task->update($validated);
-
-        if ($request->has('tags')) {
-            $task->tags()->sync($request->input('tags'));
-        }
-
-        return redirect()->route('tasks.show', $task->id)->with('success', 'Задача успешно обновлена');
-    }
-    ```
-
-### Дополнительное задание
-
-1.  Создайте кастомное правило валидации, проверяющее, что `description` не содержит запрещенные слова. 
-2.  Используйте Artisan-команду: `php artisan make:rule NoRestrictedWords`.
-```php
-<?php
-
-namespace App\Rules;
-
-use Closure;
-use Illuminate\Contracts\Validation\ValidationRule;
-
-class NoRestrictredWords implements ValidationRule
-{
-    /**
-     * Run the validation rule.
-     *
-     * @param  \Closure(string): \Illuminate\Translation\PotentiallyTranslatedString  $fail
-     */
-    public function validate(string $attribute, mixed $value, Closure $fail): void
-    {
-        $restrictedWords = ['depression', 'burnout'];
-
-        foreach ($restrictedWords as $word) {
-            if (strpos($value, $word) !== false) {
-                $fail("The :attribute contains a restricted word: {$word}");
-                return;
+            if (Auth::attempt($credentials)) {
+                $request->session()->regenerate();
+                return redirect()->route('dashboard')->with('success', 'Вы успешно вошли.');
             }
+
+            return back()->withErrors(['email' => 'Неверные учетные данные.']);
+        }
+
+        public function logout(Request $request)
+        {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->with('success', 'Вы успешно вышли.');
         }
     }
-}
-```
-3.  Примените это правило к полю description в классе `CreateTaskRequest`.
+    ```
+3.  Создаю маршруты для регистрации, входа и выхода пользователя. 
+
 ```php
- public function rules(): array
+use App\Http\Controllers\AuthController;
+
+Route::get('/register', [AuthController::class, 'register'])->name('register');
+Route::post('/register', [AuthController::class, 'storeRegister'])->name('storeRegister');
+Route::get('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/login', [AuthController::class, 'storeLogin'])->name('storeLogin');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+```
+4.  Обновляю представления для форм регистрации и входа.
+
+>__Форма регистрации__
+
+![alt text](photo/img.png)
+
+>__Форма входа__
+
+![alt text](photo/img_5.png)
+5.  Создаю отдельный класс `Request` для валидации данных при регистрации или входе, либо можно добавить валидацию непосредственно в контроллер. 
+
+`php artisan make:request AuthRequest`
+
+```php
+    public function rules(): array
     {
         return [
-            'name' => 'required|string|min:3',
-            'description' => ['nullable' ,'string', 'max:500', new NoRestrictredWords()],
-            'category_id' => 'required|exists:categories,id',
-            'due_date' => 'required|date|after_or_equal:today'
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|min:8|confirmed',
         ];
     }
 ```
 
->Проверка работы кастомного правила валидации 
+Использую этот класс в методе `storeRegister`.
 
-![img.png](photo/img_6.png)
-
-### Контрольные вопросы
-
-1.  Что такое валидация данных и зачем она нужна?
->__Валидация данных__ — это проверка информации, которую пользователь отправляет в приложение, чтобы убедиться, что она соответствует правилам. Это нужно, чтобы избежать ошибок, защитить приложение от некорректных данных и обеспечить его безопасную и корректную работу.
-2.  Как обеспечить защиту формы от CSRF-атак в Laravel?
->Laravel автоматически генерирует CSRF-токен для каждого пользователя сессии. Чтобы включить защиту в форме, нужно добавить директиву `@csrf` внутри HTML-формы:
 ```php
-    <form action="{{ route('tasks.store') }}" method="POST">
-         @csrf
-        ...
-    </form>
+public function storeRegister(AuthRequest $request)
+    {
+      ...
+    }
 ```
-3.  Как создать и использовать собственные классы запросов (Request) в Laravel?
->Для создания собственного класса запроса используится команду Artisan:
+> Проверка отображения ошибок
 
-`php artisan make:request CreateTaskRequest ` 
+![alt text](photo/img_2.png)
+![alt text](photo/img_3.png)
 
-В котором настраиваются правила валидации и авторизации.
-4.  Как защитить данные от XSS-атак при выводе в представлении?
->Чтобы защититься от XSS-атак при выводе данных в представлении Laravel, используйте функцию {{ $data }} вместо {!! $data !!}. Она автоматически экранирует опасные символы (например, <, >, "), превращая их в безопасный текст, чтобы злоумышленники не могли выполнить вредоносный код.
+6.  Проверила, чтобы регистрация и вход пользователя работают корректно.
+
+>Зарегистрированные пользователи в БД
+
+![alt text](photo/img_4.png)
+
+### №4. Авторизация пользователей
+
+1.  Реализована страница "Личный кабинет", доступ к которой имеют только авторизованные пользователи.
+2.  Настроена проверка доступа к данной странице, добавив middleware `auth` в маршрут.
+3.  Обновлено представление страницы "Личный кабинет", чтобы отображать информацию, доступную исключительно авторизованным пользователям.
+
+- Создан контроллер
+
+```
+php artisan make:controller DashboardController
+```
+- Добавлен маршрут
+
 ```php
- <div>{{ $task->name }}</div>
+use App\Http\Controllers\DashboardController;
+
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
+```
+
+- Создан `dashboard.blade.php`
+```php
+@extends('layouts.app')
+
+@section('content')
+    <div class="container mx-auto p-6 bg-gray-100 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-4">Личный кабинет</h1>
+        <p class="text-lg">Добро пожаловать, {{ $user->name }}!</p>
+        <p class="text-gray-700">Ваш email: {{ $user->email }}</p>
+
+        <div class="mt-6">
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit"
+                        class="bg-purple-500 text-white py-2 px-4 rounded-lg hover:bg-purple-600">
+                    Выйти
+                </button>
+            </form>
+        </div>
+    </div>
+@endsection
+```
+
+- Обновлён компонент `header`
+```php
+<header>
+    <h1 class='header-title'>To-Do App</h1>
+    <nav>
+        <ul>
+            <li><a href="{{ url('/') }}">Главная</a></li>
+            <li><a href="{{ url('/about') }}">О нас</a></li>
+
+            @auth
+                <li><a href="{{ route('dashboard') }}">Личный кабинет</a></li>
+                <li>
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit"
+                                class="bg-purple-500 text-white font-semibold py-2 px-4 rounded hover:bg-purple-600 transition-all">
+                            Выйти
+                        </button>
+                    </form>
+                </li>
+            @else
+                <li><a href="{{ route('login') }}">Войти</a></li>
+                <li><a href="{{ route('register') }}">Регистрация</a></li>
+            @endauth
+        </ul>
+    </nav>
+</header>
+
+```
+>Личный кабинет пользователя
+
+![alt text](photo/img_1.png)
+
+>При нажатии кнопки "Выйти", пользователь попадает на страницу входа
+
+![alt text](photo/img_6.png)
+
+### №5. Роли пользователей
+
+1.  Добавлена систему ролей: Администратор и Пользователь.
+
+>Создана миграция для добавления колонки `role`и в таблицу `user`. Добавлены новые маршруты,добавлен метод `isAdmin` в модели `User`, создано представление `admin/dashboards` для просмотра всех пользователей.
+2.  Настрока поведения для каждой роли:
+    1.  Администратор: имеет возможность просматривать личные кабинеты всех пользователей.
+    
+    ![alt text](photo/img_7.png)
+
+    >Также у админа видоизменяется `header`, появилась кнопка перехода для просмотра всех кабинетов.
+
+    2.  Пользователь: может просматривать исключительно свой личный кабинет.
+
+    ![alt text](photo/img_8.png)
+
+    >Если в `URL` попытаться перейти в `admin/dashboards` , то доступ не предоставится.
+
+    ![alt text](photo/img_9.png)
+
+
+3.  Реализуйте проверки ролей с использованием метода `can`, `Gate`, или `middleware`, чтобы обеспечить корректное распределение прав доступа.
+
+### №6. Выход и защита от CSRF
+
+1.  Добавлена кнопка выхода пользователя на страницу.
+2.  Обеспечена защита от CSRF-атак на формах.
+3.  Проверено, чтобы выход пользователя работал корректно и безопасно.
+
+## Контрольные вопросы
+
+1.  Какие готовые решения для аутентификации предоставляет Laravel?
+
+>Laravel предоставляет несколько готовых решений для аутентификации:
+>- Laravel Breeze
+>- Laravel Jetstream
+>- Laravel Fortify 
+>- Laravel Sanctum 
+>- Laravel Passport 
+>
+>Эти решения позволяют интегрировать аутентификацию и управлять пользователями в приложениях Laravel.
+
+2.  Какие методы аутентификации пользователей вы знаете?
+
+>- Сессии и куки 
+>- Токенная аутентификация
+>- Биометрическая аутентификация
+>- Аутентификация по электронной почте и пароля
+>- OAuth 2.0
+>- LDAP (Lightweight Directory Access Protocol)
+>- SAML (Security Assertion Markup Language)
+
+3.  Чем отличается аутентификация от авторизации?
+
+> Аутентификация используется для подтверждения личности,в то время как авторизация проверяет права доступа.
+
+4.  Как обеспечить защиту от CSRF-атак в Laravel?
+
+> Использовать CSRF-токены, автоматически генерируемые и проверяемые в формах.
+
+```php
+    <form method="POST" action="/index">
+        @csrf
+        <!-- ... -->
+    </form>
 ```

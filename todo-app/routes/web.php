@@ -30,9 +30,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware('auth')
     ->name('dashboard');
 
-//Route::get('/dashboard/{user?}', [DashboardController::class, 'index'])
-//    ->middleware('auth')
-//    ->name('dashboard');
+Route::get('/dashboard/{user?}', [DashboardController::class, 'show'])
+    ->middleware('auth')
+    ->name('dashboard');
+
  //Просмотр всех кабинетов (только для администратора)
 Route::get('/admin/dashboards', [DashboardController::class, 'adminIndex'])
     ->middleware('auth')

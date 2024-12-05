@@ -28,7 +28,7 @@ class DashboardController extends Controller
     public function show(User $user)
     {
         // Проверка доступа: администратор может видеть любой кабинет, пользователь — только свой
-        if (!Auth::user()->can('canViewDashboard', $user)) {
+        if (!Auth::user()->isAdmin()) {
             abort(403, 'Access denied');
         }
 
